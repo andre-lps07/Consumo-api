@@ -1,126 +1,121 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const searchBtn = document.getElementById('searchBtn');
-    const cityInput = document.getElementById('cityInput');
+document.addEventListener('DOMContentLoaded', function () {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const currencySelect = document.getElementById('currencySelect');
+    const cryptoList = document.getElementById('cryptoList');
     const loading = document.getElementById('loading');
-    const weatherInfo = document.getElementById('weatherInfo');
     const errorDiv = document.getElementById('error');
-    
-    // Elementos da previsão atual
-    const cityName = document.getElementById('cityName');
-    const weatherIcon = document.getElementById('weatherIcon');
-    const currentTemp = document.getElementById('currentTemp');
-    const weatherDescription = document.getElementById('weatherDescription');
-    const minTemp = document.getElementById('minTemp');
-    const maxTemp = document.getElementById('maxTemp');
-    const humidity = document.getElementById('humidity');
-    const windSpeed = document.getElementById('windSpeed');
-    const forecastContainer = document.getElementById('forecastContainer');
-    
-    // Configuração da API HG Brasil
-    const API_KEY = 'SUA_CHAVE_AQUI'; // Obtenha em https://hgbrasil.com/
-    const API_URL = `https://api.hgbrasil.com/weather?key=${API_KEY}&user_ip=remote`;
-    
-    searchBtn.addEventListener('click', fetchWeather);
-    cityInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            fetchWeather();
-        }
-    });
-    
-    async function fetchWeather() {
-        const city = cityInput.value.trim();
-        
-        if (!city) {
-            showError('Por favor, digite o nome de uma cidade');
-            return;
-        }
-        
+    const updateTime = document.getElementById('updateTime');
+
+    // Moedas para exibir
+    const cryptos = [
+        'bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano',
+        'ripple', 'dogecoin', 'polkadot', 'litecoin', 'chainlink',
+        'stellar', 'uniswap', 'avalanche-2', 'polygon-pos',
+        'tron', 'monero', 'bitcoin-cash'
+    ];
+    // Símbolos das moedas
+    const cryptoSymbols = {
+        bitcoin: 'BTC',
+        ethereum: 'ETH',
+        binancecoin: 'BNB',
+        solana: 'SOL',
+        cardano: 'ADA',
+        ripple: 'XRP',
+        dogecoin: 'DOGE'
+    };
+
+    // Nomes completos
+    const cryptoNames = {
+        bitcoin: 'Bitcoin',
+        ethereum: 'Ethereum',
+        binancecoin: 'Binance Coin',
+        solana: 'Solana',
+        cardano: 'Cardano',
+        ripple: 'XRP',
+        dogecoin: 'Dogecoin'
+    };
+
+    // Carregar dados ao iniciar
+    fetchCryptoData();
+
+    // Event listeners
+    refreshBtn.addEventListener('click', fetchCryptoData);
+    currencySelect.addEventListener('change', fetchCryptoData);
+
+    async function fetchCryptoData() {
+        const currency = currencySelect.value;
+
         // Reset UI
-        weatherInfo.classList.add('hidden');
+        cryptoList.innerHTML = '';
         errorDiv.classList.add('hidden');
         loading.classList.remove('hidden');
-        
+
         try {
-            const response = await fetch(`${API_URL}&city_name=${encodeURIComponent(city)}`);
-            
+            // API pública sem necessidade de token
+            const response = await fetch(
+                `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&ids=${cryptos.join(',')}&order=market_cap_desc&sparkline=false`
+            );
+
             if (!response.ok) {
                 throw new Error(`Erro na API: ${response.status}`);
             }
-            
+
             const data = await response.json();
-            
-            if (data.results) {
-                displayWeather(data.results);
-            } else {
-                throw new Error('Cidade não encontrada');
-            }
+            displayCryptoData(data, currency);
+
+            // Atualizar horário
+            updateTime.textContent = new Date().toLocaleString();
+
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
-            showError(`Erro ao carregar dados: ${error.message}`);
+            errorDiv.textContent = `Erro ao carregar cotações: ${error.message}`;
+            errorDiv.classList.remove('hidden');
         } finally {
             loading.classList.add('hidden');
         }
     }
-    
-    function displayWeather(data) {
-        // Previsão atual
-        cityName.textContent = `${data.city}, ${data.region}`;
-        currentTemp.textContent = `${data.temp}°C`;
-        weatherDescription.textContent = data.description;
-        minTemp.textContent = `${data.forecast[0].min}°C`;
-        maxTemp.textContent = `${data.forecast[0].max}°C`;
-        humidity.textContent = `${data.humidity}%`;
-        windSpeed.textContent = `${data.wind_speedy}`;
-        
-        // Ícone do tempo
-        weatherIcon.innerHTML = getWeatherIcon(data.condition_code);
-        
-        // Previsão para os próximos dias
-        forecastContainer.innerHTML = '';
-        for (let i = 1; i < 6; i++) { // Próximos 5 dias
-            const day = data.forecast[i];
-            const forecastDay = document.createElement('div');
-            forecastDay.className = 'forecast-day';
-            
-            forecastDay.innerHTML = `
-                <div>${day.weekday}</div>
-                <div>${getWeatherIcon(day.condition)}</div>
-                <div>${day.max}°C / ${day.min}°C</div>
-                <div>${day.description}</div>
-            `;
-            
-            forecastContainer.appendChild(forecastDay);
+
+    function displayCryptoData(data, currency) {
+        if (!data || data.length === 0) {
+            cryptoList.innerHTML = '<p>Nenhum dado disponível</p>';
+            return;
         }
-        
-        weatherInfo.classList.remove('hidden');
+
+        // Ordenar por market_cap
+        data.sort((a, b) => b.market_cap - a.market_cap);
+
+        // Símbolo da moeda
+        const currencySymbol = {
+            usd: '$',
+            brl: 'R$',
+            eur: '€'
+        }[currency] || '$';
+
+        data.forEach(crypto => {
+            const cryptoItem = document.createElement('div');
+            cryptoItem.className = 'crypto-item';
+
+            const priceChange = crypto.price_change_percentage_24h;
+            const changeClass = priceChange >= 0 ? 'positive' : 'negative';
+            const changeIcon = priceChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+            cryptoItem.innerHTML = `
+                <div class="crypto-info">
+                    <img src="${crypto.image}" alt="${crypto.name}" class="crypto-icon">
+                    <div>
+                        <div class="crypto-name">${cryptoNames[crypto.id] || crypto.name}</div>
+                        <div class="crypto-symbol">${cryptoSymbols[crypto.id] || ''}</div>
+                    </div>
+                </div>
+                <div class="crypto-price">
+                    ${currencySymbol} ${crypto.current_price.toLocaleString()}
+                    <div class="price-change ${changeClass}">
+                        <i class="fas ${changeIcon}"></i> ${Math.abs(priceChange).toFixed(2)}%
+                    </div>
+                </div>
+            `;
+
+            cryptoList.appendChild(cryptoItem);
+        });
     }
-    
-    function getWeatherIcon(conditionCode) {
-        // Mapeamento de códigos de condição para ícones Font Awesome
-        const icons = {
-            'storm': 'fa-bolt',
-            'snow': 'fa-snowflake',
-            'hail': 'fa-cloud-meatball',
-            'rain': 'fa-cloud-rain',
-            'fog': 'fa-smog',
-            'clear_day': 'fa-sun',
-            'clear_night': 'fa-moon',
-            'cloud': 'fa-cloud',
-            'cloudly_day': 'fa-cloud-sun',
-            'cloudly_night': 'fa-cloud-moon',
-            'none_day': 'fa-sun',
-            'none_night': 'fa-moon'
-        };
-        
-        const iconClass = icons[conditionCode] || 'fa-cloud';
-        return `<i class="fas ${iconClass}"></i>`;
-    }
-    
-    function showError(message) {
-        errorDiv.textContent = message;
-        errorDiv.classList.remove('hidden');
-    }
-    
-    // Carregar dados da localização do usuário por padrão
-    fetchWeather();
 });
