@@ -3,32 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cotações de Criptomoedas</title>
+    <title>Painel de 20 Criptomoedas</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Customizado -->
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1><i class="fab fa-bitcoin"></i> Cotações Cripto</h1>
-        
-        <div class="controls">
-            <button id="refreshBtn"><i class="fas fa-sync-alt"></i> Atualizar</button>
-            <select id="currencySelect">
-                <option value="usd">Dólar (USD)</option>
-                <option value="brl">Real (BRL)</option>
-                <option value="eur">Euro (EUR)</option>
-            </select>
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center"><i class="fas fa-coins me-2"></i>Painel de Criptomoedas</h1>
+                <p class="text-center text-muted">Monitoramento em tempo real de 20 criptomoedas</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="search-input" class="form-control" placeholder="Filtrar criptomoedas...">
+                            <button class="btn btn-outline-secondary" type="button" id="clear-search">Limpar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary filter-btn active" data-filter="all">Todas</button>
+                        <button type="button" class="btn btn-outline-success filter-btn" data-filter="top">Top 10</button>
+                        <button type="button" class="btn btn-outline-info filter-btn" data-filter="gainers">Altas</button>
+                        <button type="button" class="btn btn-outline-danger filter-btn" data-filter="losers">Baixas</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div id="cryptoList" class="crypto-list"></div>
-        
-        <div id="error" class="error hidden"></div>
-        
-        <div class="footer">
-            Dados atualizados em: <span id="updateTime"></span>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Criptomoeda</th>
+                                <th scope="col" class="text-end">Preço (BRL)</th>
+                                <th scope="col" class="text-end">Variação 24h</th>
+                                <th scope="col" class="text-end">Volume 24h</th>
+                                <th scope="col" class="text-end">Alta 24h</th>
+                                <th scope="col" class="text-end">Baixa 24h</th>
+                            </tr>
+                        </thead>
+                        <tbody id="crypto-table-body">
+                            <!-- Dados serão inseridos via JavaScript -->
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Carregando...</span>
+                                    </div>
+                                    <p class="mt-2">Carregando dados das criptomoedas...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12 text-center">
+                <button id="refresh-btn" class="btn btn-primary">
+                    <i class="fas fa-sync-alt me-2"></i>Atualizar Dados
+                </button>
+                <p class="mt-2 text-muted">Última atualização: <span id="last-update"></span></p>
+            </div>
         </div>
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Nosso JS -->
     <script src="script.js"></script>
 </body>
 </html>

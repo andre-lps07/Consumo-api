@@ -1,138 +1,48 @@
 body {
+    background-color: #f8f9fa;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
-    margin: 0;
-    padding: 20px;
-    color: #333;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: white;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
 }
 
-h1 {
-    text-align: center;
-    color: #f7931a;
-    margin-bottom: 25px;
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
 }
 
-h1 i {
-    margin-right: 10px;
+.positive-change {
+    color: #28a745;
+    font-weight: 500;
 }
 
-.controls {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin-bottom: 20px;
+.negative-change {
+    color: #dc3545;
+    font-weight: 500;
 }
 
-#refreshBtn {
-    padding: 10px 20px;
-    background-color: #f7931a;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+#search-input {
+    max-width: 500px;
 }
 
-#refreshBtn:hover {
-    background-color: #e07b0c;
+.crypto-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
 }
 
-#currencySelect {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 16px;
-}
-
-.crypto-list {
-    margin-top: 20px;
-}
-
-.crypto-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s;
-}
-
-.crypto-item:hover {
-    background-color: #f9f9f9;
-}
-
-.crypto-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.crypto-icon {
-    width: 32px;
-    height: 32px;
-}
-
-.crypto-name {
+.filter-btn.active {
     font-weight: bold;
 }
 
-.crypto-symbol {
-    color: #777;
-    font-size: 14px;
+/* Efeito de loading */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
 
-.crypto-price {
-    font-weight: bold;
-    text-align: right;
-}
-
-.price-change {
-    font-size: 14px;
-    margin-top: 3px;
-}
-
-.positive {
-    color: #16c784;
-}
-
-.negative {
-    color: #ea3943;
-}
-
-#loading {
-    text-align: center;
-    padding: 20px;
-    color: #777;
-}
-
-.hidden {
-    display: none;
-}
-
-.error {
-    color: #ea3943;
-    text-align: center;
-    padding: 15px;
-    background-color: #fde8e8;
-    border-radius: 5px;
-    margin: 20px 0;
-}
-
-.footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #777;
-    font-size: 14px;
+.pulse {
+    animation: pulse 1.5s infinite;
 }

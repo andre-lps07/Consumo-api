@@ -1,121 +1,219 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const refreshBtn = document.getElementById('refreshBtn');
-    const currencySelect = document.getElementById('currencySelect');
-    const cryptoList = document.getElementById('cryptoList');
-    const loading = document.getElementById('loading');
-    const errorDiv = document.getElementById('error');
-    const updateTime = document.getElementById('updateTime');
+// Lista completa de 20 criptomoedas com seus pares na Binance
+const cryptos = [
+    { symbol: 'BTC', name: 'Bitcoin', pair: 'BTCBRL', rank: 1 },
+    { symbol: 'ETH', name: 'Ethereum', pair: 'ETHBRL', rank: 2 },
+    { symbol: 'BNB', name: 'Binance Coin', pair: 'BNBBRL', rank: 3 },
+    { symbol: 'XRP', name: 'Ripple', pair: 'XRPBRL', rank: 4 },
+    { symbol: 'SOL', name: 'Solana', pair: 'SOLBRL', rank: 5 },
+    { symbol: 'ADA', name: 'Cardano', pair: 'ADABRL', rank: 6 },
+    { symbol: 'DOGE', name: 'Dogecoin', pair: 'DOGEBRL', rank: 7 },
+    { symbol: 'DOT', name: 'Polkadot', pair: 'DOTBRL', rank: 8 },
+    { symbol: 'MATIC', name: 'Polygon', pair: 'MATICBRL', rank: 9 },
+    { symbol: 'LTC', name: 'Litecoin', pair: 'LTCBRL', rank: 10 },
+    { symbol: 'LINK', name: 'Chainlink', pair: 'LINKBRL', rank: 11 },
+    { symbol: 'XLM', name: 'Stellar', pair: 'XLMBRL', rank: 12 },
+    { symbol: 'UNI', name: 'Uniswap', pair: 'UNIBRL', rank: 13 },
+    { symbol: 'AVAX', name: 'Avalanche', pair: 'AVAXBRL', rank: 14 },
+    { symbol: 'ETC', name: 'Ethereum Classic', pair: 'ETCBRL', rank: 15 },
+    { symbol: 'VET', name: 'VeChain', pair: 'VETBRL', rank: 16 },
+    { symbol: 'FIL', name: 'Filecoin', pair: 'FILBRL', rank: 17 },
+    { symbol: 'ATOM', name: 'Cosmos', pair: 'ATOMBRL', rank: 18 },
+    { symbol: 'ALGO', name: 'Algorand', pair: 'ALGOBRL', rank: 19 },
+    { symbol: 'BCH', name: 'Bitcoin Cash', pair: 'BCHBRL', rank: 20 }
+];
 
-    // Moedas para exibir
-    const cryptos = [
-        'bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano',
-        'ripple', 'dogecoin', 'polkadot', 'litecoin', 'chainlink',
-        'stellar', 'uniswap', 'avalanche-2', 'polygon-pos',
-        'tron', 'monero', 'bitcoin-cash'
-    ];
-    // Símbolos das moedas
-    const cryptoSymbols = {
-        bitcoin: 'BTC',
-        ethereum: 'ETH',
-        binancecoin: 'BNB',
-        solana: 'SOL',
-        cardano: 'ADA',
-        ripple: 'XRP',
-        dogecoin: 'DOGE'
-    };
+// Cache de dados para evitar múltiplas requisições
+let cryptoDataCache = {};
 
-    // Nomes completos
-    const cryptoNames = {
-        bitcoin: 'Bitcoin',
-        ethereum: 'Ethereum',
-        binancecoin: 'Binance Coin',
-        solana: 'Solana',
-        cardano: 'Cardano',
-        ripple: 'XRP',
-        dogecoin: 'Dogecoin'
-    };
+// Funções de formatação
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: value < 1 ? 6 : 2
+    }).format(value);
+};
 
-    // Carregar dados ao iniciar
-    fetchCryptoData();
+const formatVolume = (value) => {
+    if (value >= 1000000000) {
+        return (value / 1000000000).toFixed(2) + ' Bi';
+    }
+    if (value >= 1000000) {
+        return (value / 1000000).toFixed(2) + ' Mi';
+    }
+    if (value >= 1000) {
+        return (value / 1000).toFixed(2) + ' Mil';
+    }
+    return value.toFixed(2);
+};
 
-    // Event listeners
-    refreshBtn.addEventListener('click', fetchCryptoData);
-    currencySelect.addEventListener('change', fetchCryptoData);
+const formatPercentage = (value) => {
+    return value.toFixed(2) + '%';
+};
 
-    async function fetchCryptoData() {
-        const currency = currencySelect.value;
+// Buscar dados da API
+async function fetchCryptoData(crypto) {
+    try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${crypto.pair}`);
+        const data = await response.json();
+        
+        // Adicionar informações adicionais
+        data.symbol = crypto.symbol;
+        data.name = crypto.name;
+        data.rank = crypto.rank;
+        
+        return data;
+    } catch (error) {
+        console.error(`Erro ao buscar dados para ${crypto.symbol}:`, error);
+        return null;
+    }
+}
 
-        // Reset UI
-        cryptoList.innerHTML = '';
-        errorDiv.classList.add('hidden');
-        loading.classList.remove('hidden');
+// Atualizar tabela com os dados
+function updateTable(data) {
+    const tableBody = document.getElementById('crypto-table-body');
+    tableBody.innerHTML = '';
 
-        try {
-            // API pública sem necessidade de token
-            const response = await fetch(
-                `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${currency}&ids=${cryptos.join(',')}&order=market_cap_desc&sparkline=false`
-            );
+    if (!data || data.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">Nenhum dado disponível</td>
+            </tr>
+        `;
+        return;
+    }
 
-            if (!response.ok) {
-                throw new Error(`Erro na API: ${response.status}`);
+    data.forEach((crypto, index) => {
+        if (!crypto) return;
+
+        const lastPrice = parseFloat(crypto.lastPrice);
+        const priceChangePercent = parseFloat(crypto.priceChangePercent);
+        const volume = parseFloat(crypto.volume);
+        const highPrice = parseFloat(crypto.highPrice);
+        const lowPrice = parseFloat(crypto.lowPrice);
+
+        const row = document.createElement('tr');
+        row.className = 'crypto-row';
+        row.dataset.symbol = crypto.symbol;
+        row.dataset.rank = crypto.rank;
+        row.dataset.change = priceChangePercent;
+        
+        row.innerHTML = `
+            <th scope="row">${crypto.rank}</th>
+            <td>
+                <img src="https://cryptoicon-api.vercel.app/api/icon/${crypto.symbol.toLowerCase()}" 
+                     alt="${crypto.name}" 
+                     class="crypto-logo"
+                     onerror="this.src='https://cryptoicon-api.vercel.app/api/icon/btc'">
+                <strong>${crypto.name}</strong> <span class="text-muted">${crypto.symbol}</span>
+            </td>
+            <td class="text-end">${formatCurrency(lastPrice)}</td>
+            <td class="text-end ${priceChangePercent >= 0 ? 'positive-change' : 'negative-change'}">
+                ${priceChangePercent >= 0 ? '+' : ''}${formatPercentage(priceChangePercent)}
+            </td>
+            <td class="text-end">${formatVolume(volume)}</td>
+            <td class="text-end">${formatCurrency(highPrice)}</td>
+            <td class="text-end">${formatCurrency(lowPrice)}</td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+}
+
+// Filtrar criptomoedas
+function filterCryptos() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const activeFilter = document.querySelector('.filter-btn.active').dataset.filter;
+    
+    let filteredData = Object.values(cryptoDataCache).filter(crypto => {
+        if (!crypto) return false;
+        
+        // Aplicar filtro de busca
+        const matchesSearch = crypto.name.toLowerCase().includes(searchTerm) || 
+                             crypto.symbol.toLowerCase().includes(searchTerm);
+        
+        if (!matchesSearch) return false;
+        
+        // Aplicar filtros adicionais
+        switch (activeFilter) {
+            case 'top':
+                return crypto.rank <= 10;
+            case 'gainers':
+                return parseFloat(crypto.priceChangePercent) > 0;
+            case 'losers':
+                return parseFloat(crypto.priceChangePercent) < 0;
+            default:
+                return true;
+        }
+    });
+    
+    // Ordenar por rank
+    filteredData.sort((a, b) => a.rank - b.rank);
+    
+    updateTable(filteredData);
+}
+
+// Atualizar todos os dados
+async function updateAllData() {
+    try {
+        // Mostrar estado de carregamento
+        const tableBody = document.getElementById('crypto-table-body');
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Carregando...</span>
+                    </div>
+                    <p class="mt-2 pulse">Atualizando dados...</p>
+                </td>
+            </tr>
+        `;
+        
+        // Buscar dados para todas as criptomoedas em paralelo
+        const fetchPromises = cryptos.map(crypto => fetchCryptoData(crypto));
+        const results = await Promise.all(fetchPromises);
+        
+        // Atualizar cache
+        results.forEach(data => {
+            if (data) {
+                cryptoDataCache[data.symbol] = data;
             }
-
-            const data = await response.json();
-            displayCryptoData(data, currency);
-
-            // Atualizar horário
-            updateTime.textContent = new Date().toLocaleString();
-
-        } catch (error) {
-            console.error('Erro ao buscar dados:', error);
-            errorDiv.textContent = `Erro ao carregar cotações: ${error.message}`;
-            errorDiv.classList.remove('hidden');
-        } finally {
-            loading.classList.add('hidden');
-        }
-    }
-
-    function displayCryptoData(data, currency) {
-        if (!data || data.length === 0) {
-            cryptoList.innerHTML = '<p>Nenhum dado disponível</p>';
-            return;
-        }
-
-        // Ordenar por market_cap
-        data.sort((a, b) => b.market_cap - a.market_cap);
-
-        // Símbolo da moeda
-        const currencySymbol = {
-            usd: '$',
-            brl: 'R$',
-            eur: '€'
-        }[currency] || '$';
-
-        data.forEach(crypto => {
-            const cryptoItem = document.createElement('div');
-            cryptoItem.className = 'crypto-item';
-
-            const priceChange = crypto.price_change_percentage_24h;
-            const changeClass = priceChange >= 0 ? 'positive' : 'negative';
-            const changeIcon = priceChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
-
-            cryptoItem.innerHTML = `
-                <div class="crypto-info">
-                    <img src="${crypto.image}" alt="${crypto.name}" class="crypto-icon">
-                    <div>
-                        <div class="crypto-name">${cryptoNames[crypto.id] || crypto.name}</div>
-                        <div class="crypto-symbol">${cryptoSymbols[crypto.id] || ''}</div>
-                    </div>
-                </div>
-                <div class="crypto-price">
-                    ${currencySymbol} ${crypto.current_price.toLocaleString()}
-                    <div class="price-change ${changeClass}">
-                        <i class="fas ${changeIcon}"></i> ${Math.abs(priceChange).toFixed(2)}%
-                    </div>
-                </div>
-            `;
-
-            cryptoList.appendChild(cryptoItem);
         });
+        
+        // Aplicar filtros e atualizar tabela
+        filterCryptos();
+        
+        // Atualizar horário
+        const now = new Date();
+        document.getElementById('last-update').textContent = now.toLocaleTimeString('pt-BR');
+        
+    } catch (error) {
+        console.error('Erro ao atualizar dados:', error);
+        alert('Erro ao atualizar dados. Tente novamente mais tarde.');
     }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    updateAllData();
+    // Atualizar a cada 1 minuto
+    setInterval(updateAllData, 60000);
+});
+
+document.getElementById('refresh-btn').addEventListener('click', updateAllData);
+
+document.getElementById('search-input').addEventListener('input', filterCryptos);
+
+document.getElementById('clear-search').addEventListener('click', () => {
+    document.getElementById('search-input').value = '';
+    filterCryptos();
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        filterCryptos();
+    });
 });
